@@ -1,0 +1,21 @@
+{
+	// Use MinGW generators and build directory for CMake Tools / C/C++ extension.
+	"cmake.generator": "MinGW Makefiles",
+	"cmake.buildDirectory": "${workspaceFolder}/build-mingw",
+	"cmake.configureSettings": {},
+
+	// Point IntelliSense to third-party headers.
+	"C_Cpp.default.includePath": [
+		"${workspaceFolder}/include",
+		"${workspaceFolder}/src"
+	],
+	"C_Cpp.default.defines": [
+		"GLFW_INCLUDE_NONE"
+	],
+
+	// If gdb isn't on PATH, set the full path here (example below). Update to match your install.
+	"C_Cpp.default.debuggerPath": "gdb",
+
+	// Keep launch/debug working directory consistent.
+	"C_Cpp.default.cwd": "${workspaceFolder}"
+}
