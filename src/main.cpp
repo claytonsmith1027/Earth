@@ -72,6 +72,12 @@ unsigned int indices[] = {
     0, 1, 2 
 };
 
+glm::vec3 eye(0.0f, 0.0f, 3.0f);
+glm::vec3 eyeFront(0.0f, 0.0f, -1.0f);
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
 int polygonMode = GL_FILL;
 
 void toggleWireframe(){
@@ -95,8 +101,28 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 }
 
 void processInput(GLFWwindow* window){
+    float cameraSpeed = 2.5f * deltaTime;
+
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
         glfwSetWindowShouldClose(window, true);
+    }
+    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
+        eye += cameraSpeed * eyeFront;
+    }
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
+        eye -= glm::normalize(glm::cross(eyeFront, glm::vec3(0.0f, 1.0f, 0.1f))) * cameraSpeed;
+    }
+    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
+        eye -= cameraSpeed * eyeFront;
+    }
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
+        eye += glm::normalize(glm::cross(eyeFront, glm::vec3(0.0f, 1.0f, 0.1f))) * cameraSpeed;
+    }
+    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
+        eye += cameraSpeed * glm::vec3(0.0f, 1.0f, 0.0f);
+    }
+    if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
+        eye -= cameraSpeed * glm::vec3(0.0f, 1.0f, 0.0f);
     }
 }
 
@@ -155,7 +181,11 @@ int main(int argc, char** argv){
 
     glEnable(GL_DEPTH_TEST);
 
-    while(!glfwWindowShouldClose(window)){  
+    while(!glfwWindowShouldClose(window)){ 
+        float currentTime = glfwGetTime();
+        deltaTime = currentTime - lastFrame;
+        lastFrame = currentTime;
+
         //input
         processInput(window);
         
@@ -163,10 +193,8 @@ int main(int argc, char** argv){
         glClearColor(0.2f, 0.3f, 0.3f, 0.1f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        glm::mat4 view = glm::lookAt(eye, eye + eyeFront, glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 100.0f);
-
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
         shader.use();
