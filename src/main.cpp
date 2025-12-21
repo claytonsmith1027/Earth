@@ -73,7 +73,19 @@ unsigned int indices[] = {
 };
 
 glm::vec3 eye(0.0f, 0.0f, 3.0f);
-glm::vec3 eyeFront(0.0f, 0.0f, -1.0f);
+float moveSpeed = 2.5f;
+
+float pitch = 0.0f;
+float yaw = -90.0f;
+float sensitivity = 0.025f;
+
+glm::vec3 eyeFront(glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch)),
+                  glm::sin(glm::radians(pitch)),
+                  glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch)));
+
+bool firstFocus = true;
+float lastX = WINDOW_WIDTH / 2;
+float lastY = WINDOW_HEIGHT / 2;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
@@ -96,13 +108,47 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
+void scroll_callback(GLFWwindow* window, double dx, double dy){
+    moveSpeed += (float)dy;
+    if(moveSpeed < 0.0f){
+        moveSpeed = 0.0f;
+    }
+}
+
+void mouse_callback(GLFWwindow* window, double x, double y){
+    if(firstFocus){
+        lastX = x;
+        lastY = y;
+        firstFocus = false;
+    }
+
+    float dx = sensitivity * (x - lastX);
+    float dy = sensitivity * (y - lastY);
+    lastX = x;
+    lastY = y;
+
+    yaw += dx;
+    pitch -= dy;
+
+    if(pitch > 89.0f){
+        pitch = 89.0f;
+    }
+    if(pitch < -89.0f){
+        pitch = -89.0f;
+    }
+
+    eyeFront = glm::vec3(glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch)),
+                         glm::sin(glm::radians(pitch)),
+                         glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch)));
+    eyeFront = glm::normalize(eyeFront);
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
     glViewport(0, 0, width, height);
 }
 
 void processInput(GLFWwindow* window){
-    float cameraSpeed = 2.5f * deltaTime;
-
+    float cameraSpeed = moveSpeed * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
         glfwSetWindowShouldClose(window, true);
     }
@@ -149,6 +195,10 @@ int main(int argc, char** argv){
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     
 
