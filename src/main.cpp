@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "shader.h"
+#include "camera.h"
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
@@ -68,20 +69,7 @@ std::vector<glm::vec3> cubePositions = {
     glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
-unsigned int indices[] = {  
-    0, 1, 2 
-};
-
-glm::vec3 eye(0.0f, 0.0f, 3.0f);
-float moveSpeed = 2.5f;
-
-float pitch = 0.0f;
-float yaw = -90.0f;
-float sensitivity = 0.025f;
-
-glm::vec3 eyeFront(glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch)),
-                  glm::sin(glm::radians(pitch)),
-                  glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch)));
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 bool firstFocus = true;
 float lastX = WINDOW_WIDTH / 2;
@@ -109,10 +97,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 void scroll_callback(GLFWwindow* window, double dx, double dy){
-    moveSpeed += (float)dy;
-    if(moveSpeed < 0.0f){
-        moveSpeed = 0.0f;
-    }
+    camera.processScroll(dy);
 }
 
 void mouse_callback(GLFWwindow* window, double x, double y){
@@ -122,25 +107,12 @@ void mouse_callback(GLFWwindow* window, double x, double y){
         firstFocus = false;
     }
 
-    float dx = sensitivity * (x - lastX);
-    float dy = sensitivity * (y - lastY);
+    float dx = (x - lastX);
+    float dy = (y - lastY);
     lastX = x;
     lastY = y;
-
-    yaw += dx;
-    pitch -= dy;
-
-    if(pitch > 89.0f){
-        pitch = 89.0f;
-    }
-    if(pitch < -89.0f){
-        pitch = -89.0f;
-    }
-
-    eyeFront = glm::vec3(glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch)),
-                         glm::sin(glm::radians(pitch)),
-                         glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch)));
-    eyeFront = glm::normalize(eyeFront);
+    
+    camera.processMouseMovement(dx, dy);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
@@ -148,27 +120,26 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 }
 
 void processInput(GLFWwindow* window){
-    float cameraSpeed = moveSpeed * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
         glfwSetWindowShouldClose(window, true);
     }
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
-        eye += cameraSpeed * eyeFront;
+        camera.processInput(FORWARD, deltaTime);
     }
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
-        eye -= glm::normalize(glm::cross(eyeFront, glm::vec3(0.0f, 1.0f, 0.1f))) * cameraSpeed;
+        camera.processInput(LEFT, deltaTime);
     }
     if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
-        eye -= cameraSpeed * eyeFront;
+        camera.processInput(BACKWARD, deltaTime);
     }
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
-        eye += glm::normalize(glm::cross(eyeFront, glm::vec3(0.0f, 1.0f, 0.1f))) * cameraSpeed;
+        camera.processInput(RIGHT, deltaTime);
     }
     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
-        eye += cameraSpeed * glm::vec3(0.0f, 1.0f, 0.0f);
+        camera.processInput(UP, deltaTime);
     }
     if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
-        eye -= cameraSpeed * glm::vec3(0.0f, 1.0f, 0.0f);
+        camera.processInput(DOWN, deltaTime);
     }
 }
 
@@ -209,16 +180,11 @@ int main(int argc, char** argv){
     GLuint VBO;
     glGenBuffers(1, &VBO);
 
-    GLuint EBO;
-    glGenBuffers(1, &EBO); 
-
     Shader shader("resources/vert.glsl", "resources/frag.glsl");
     
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
     glEnableVertexAttribArray(0);
@@ -243,7 +209,7 @@ int main(int argc, char** argv){
         glClearColor(0.2f, 0.3f, 0.3f, 0.1f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 view = glm::lookAt(eye, eye + eyeFront, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view = camera.getViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 100.0f);
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
