@@ -9,8 +9,8 @@
 #include "shader.h"
 #include "camera.h"
 
-const int WINDOW_WIDTH = 800;
-const int WINDOW_HEIGHT = 600;
+int WINDOW_WIDTH = 800;
+int WINDOW_HEIGHT = 600;
 
 float vertices[] = {
     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f,
@@ -71,6 +71,8 @@ std::vector<glm::vec3> cubePositions = {
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
+glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 100.0f);
+
 bool firstFocus = true;
 float lastX = WINDOW_WIDTH / 2;
 float lastY = WINDOW_HEIGHT / 2;
@@ -117,6 +119,10 @@ void mouse_callback(GLFWwindow* window, double x, double y){
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
     glViewport(0, 0, width, height);
+
+    WINDOW_WIDTH = width;
+    WINDOW_HEIGHT = height;
+    projection = glm::perspective(glm::radians(45.0f), (float) WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 100.0f);
 }
 
 void processInput(GLFWwindow* window){
@@ -209,10 +215,11 @@ int main(int argc, char** argv){
         glClearColor(0.2f, 0.3f, 0.3f, 0.1f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 view = camera.getViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) WINDOW_WIDTH / (float) WINDOW_HEIGHT, 0.1f, 100.0f);
-        shader.setMat4("view", view);
         shader.setMat4("projection", projection);
+        
+        glm::mat4 view = camera.getViewMatrix();
+        shader.setMat4("view", view);
+        
         shader.use();
         glBindVertexArray(VAO);
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
